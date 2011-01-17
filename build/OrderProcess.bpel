@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<process
+    name="OrderProcess"
+    targetNamespace="http://enterprise.netbeans.org/bpel/AIC02/AIC02"
+    xmlns:tns="http://enterprise.netbeans.org/bpel/AIC02/AIC02"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+    xmlns:sxt="http://www.sun.com/wsbpel/2.0/process/executable/SUNExtension/Trace"
+    xmlns:sxed="http://www.sun.com/wsbpel/2.0/process/executable/SUNExtension/Editor"
+    xmlns:sxeh="http://www.sun.com/wsbpel/2.0/process/executable/SUNExtension/ErrorHandling" 
+    xmlns:sxed2="http://www.sun.com/wsbpel/2.0/process/executable/SUNExtension/Editor2"
+    xmlns:ns0="http://infosys.tuwien.ac.at/aic10/ass2/OrderProcessSchema"
+    xmlns:ns1="http://service/"
+    xmlns:ns2="http://infosys.tuwien.ac.at/aic10/ass1/dto/shipping"
+    xmlns:ns3="http://infosys.tuwien.ac.at/aic10/ass1/dto/warehouse"
+    xmlns:ns4="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+    xmlns:ns5="http://schemas.xmlsoap.org/ws/2004/08/addressing"
+    xmlns:ns6="http://infosys.tuwien.ac.at/aic10/ass2/process"  
+    xmlns:ns9="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" xmlns:ns10="http://infosys.tuwien.ac.at/aic10/ass1/dto/supplier" xmlns:ns11="http://infosys.tuwien.ac.at/aic10/ass1/dto/supplierregistry"
+    >
+    <import namespace="http://infosys.tuwien.ac.at/aic10/ass2/process" location="OrderProcess.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <import namespace="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" location="CustomerManagementService.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <import namespace="http://infosys.tuwien.ac.at/aic10/ass1/dto/warehouse" location="WarehouseService.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <import namespace="http://infosys.tuwien.ac.at/aic10/ass1/dto/shipping" location="ShippingService.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <import namespace="http://infosys.tuwien.ac.at/aic10/ass1/dto/supplier" location="SupplierFacade.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <import namespace="http://services.bookstore/" location="registry.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <import namespace="http://infosys.tuwien.ac.at/aic10/ass1/dto/supplierregistry" location="http://localhost:9000/registry?wsdl=SupplierRegistry.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"/>
+    <partnerLinks>
+        <partnerLink name="CustomerMNG" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" partnerLinkType="tns:CustomerManagementLinkType" partnerRole="CustomerManagementProvider"/>
+        <partnerLink name="Warehaus" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/warehouse" partnerLinkType="tns:WarehouseLinkType" partnerRole="WarehouseProvider"/>
+        <partnerLink name="Registry" xmlns:tns="http://services.bookstore/" partnerLinkType="tns:SupplierRegistryLinkType" partnerRole="SupplierRegistryProvider"/>
+        <partnerLink name="SupplierService" partnerLinkType="ns10:SupplierFacadeLinkType" partnerRole="SupplierFacadeProvider"/>
+        <partnerLink name="Shiping" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/shipping" partnerLinkType="tns:ShippingLinkType" partnerRole="ShippingProvider"/>
+        <partnerLink name="OrderProcess" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass2/process" partnerLinkType="tns:OrderProcessLinkType" myRole="OrderProcessProvider"/>
+    </partnerLinks>
+    <variables>
+        <variable name="success" type="xsd:boolean"/>
+        <variable name="faultVar" messageType="sxeh:faultMessage"/>
+        <variable name="Notify_customerOut" messageType="ns9:notify_customerResponse"/>
+        <variable name="Notify_customerIn" messageType="ns9:notify_customer"/>
+        <variable name="Ship_itemsOut" messageType="ns2:ship_itemsResponse"/>
+        <variable name="Ship_itemsIn" messageType="ns2:ship_items"/>
+        <variable name="Notify_customerOutAfterOrder" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" messageType="tns:notify_customerResponse"/>
+        <variable name="Notify_customerInAfterOrder" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" messageType="tns:notify_customer"/>
+        <variable name="Update_accountOut" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" messageType="tns:update_accountResponse"/>
+        <variable name="Update_accountIn" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" messageType="tns:update_account"/>
+        <variable name="counter" type="xsd:integer"/>
+        <variable name="indexCounter" type="xsd:integer" />
+         <variable name="Get_customerOut" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" messageType="tns:get_customerResponse"/>
+        <variable name="Get_customerIn" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass1/dto/customermanagement" messageType="tns:get_customer"/>
+        <variable name="Start_processOut" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass2/process" messageType="tns:start_process_response"/>
+        <variable name="Start_processIn" xmlns:tns="http://infosys.tuwien.ac.at/aic10/ass2/process" messageType="tns:start_process_request">
+            <sxed2:editor>
+                <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachItemCounter]" source="from"/>
+            </sxed2:editor>
+        </variable>
+        <variable name="total_cost"   type="xs:integer"/>
+    </variables>
+    <sequence name="Sequence13">
+        <scope name="ScopeProcess">
+            <variables>
+                <variable name="CallbackOut" messageType="ns6:callback_response"/>
+                <variable name="Ship_itemsOutAsyn" messageType="ns2:ship_itemsResponse"/>
+                <variable name="Start_processInAyn" messageType="ns6:start_process_request"/>
+            </variables>
+            <sequence>
+                    <receive name="ResiveRequestOrder" createInstance="yes" partnerLink="OrderProcess" operation="start_process" portType="ns6:OrderProcessPortType" variable="Start_processIn"/>
+                        <assign name="InitializeVar">
+                            <copy>
+                                    <from>0</from>
+                                        <to variable="total_cost"/>
+                                </copy>
+                                <copy>
+                                    <from>1</from>
+                                        <to variable="counter"/>
+                                </copy>
+                                <copy>
+                                    <from>1</from>
+                                        <to variable="indexCounter"/>
+                                </copy>
+                        </assign>
+                        <assign name="getCustomer">
+                            <copy>
+                                    <from>$Start_processIn.part1/ns0:customer</from>
+                                        <to>$Get_customerIn.parameters/id</to>
+                                </copy>
+                        </assign>
+                        <invoke name="InvokeCustomerWithId" partnerLink="CustomerMNG" operation="get_customer" portType="ns9:CustomerManagement" inputVariable="Get_customerIn" outputVariable="Get_customerOut"/>
+                        <if name="If_CustomerAvailable">
+                            <condition>count($Get_customerOut.parameters/return) = 1</condition>
+                                <sequence name="Sequence5">
+                                    <forEach name="ForEachProduct" parallel="no" counterName="ForEachProductCounter">
+                                            <startCounterValue>1</startCounterValue>
+                                                <finalCounterValue>count($Start_processIn.part1/ns0:orderParts)</finalCounterValue>
+                                                <completionCondition>
+                                                    <branches/>
+                                                </completionCondition>
+                                                <scope name="ScopeProduct">
+                                                    <variables>
+                                                            <variable name="Get_address_from_supplierOut" messageType="ns11:get_address_from_supplierResponse"/>
+                                                                <variable name="Get_address_from_supplierIn" messageType="ns11:get_address_from_supplier"/>
+                                                                <variable name="SupplierOrderOut" messageType="ns10:orderResponse"/>
+                                                                <variable name="SupplierOrderIn" messageType="ns10:order"/>
+                                                                <variable name="WarehouseOrderOut" messageType="ns3:orderResponse"/>
+                                                                <variable name="WarehouseOrderIn" messageType="ns3:order"/>
+                                                                <variable name="Check_availabilityOut" messageType="ns3:check_availabilityResponse"/>
+                                                                <variable name="Check_availabilityIn" messageType="ns3:check_availability"/>
+                                                        </variables>
+                                                        <sequence name="SequenceProduct">
+                                                            <assign name="productToCheck">
+                                                                    <copy>
+                                                                            <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:amount
+                                    <sxed2:editor>
+                                                                                            <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                        </sxed2:editor>
+                                                                                </from>
+                                                                                <to>$Check_availabilityIn.parameters/amount</to>
+                                                                        </copy>
+                                                                        <copy>
+                                                                            <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:product_id
+                                    <sxed2:editor>
+                                                                                            <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                        </sxed2:editor>
+                                                                                </from>
+                                                                                <to>$Check_availabilityIn.parameters/product/@id</to>
+                                                                        </copy>
+                                                                </assign>
+                                                                <invoke name="InvokeWarehouseForCheck" partnerLink="Warehaus" operation="check_availability" portType="ns3:Warehouse" inputVariable="Check_availabilityIn" outputVariable="Check_availabilityOut"/>
+                                                                <if name="If_WarehouseAvailable">
+                                                                    <condition>$Check_availabilityOut.parameters/return/isAvailable</condition>
+                                                                        <sequence name="Sequence8">
+                                                                            <sequence name="SequenceOrder">
+                                                                                    <assign name="productToOrderInWarehouse">
+                                                                                            <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:product_id
+                                            <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$WarehouseOrderIn.parameters/product/@id</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:amount
+                                            <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$WarehouseOrderIn.parameters/amount</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>1.5</from>
+                                                                                                        <to>$WarehouseOrderIn.parameters/product/singleUnitPrice</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>'ProductFromWarehouse'</from>
+                                                                                                        <to>$WarehouseOrderIn.parameters/product/name</to>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                        <invoke name="InvokeWarehouseToOrder" partnerLink="Warehaus" operation="order" portType="ns3:Warehouse" inputVariable="WarehouseOrderIn" outputVariable="WarehouseOrderOut"/>
+                                                                                        <assign name="IncrementPriceFromWarehouse">
+                                                                                            <copy>
+                                                                                                    <from>$total_cost + $WarehouseOrderOut.parameters/return</from>
+                                                                                                        <to variable="total_cost"/>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>$counter + 1</from>
+                                                                                                        <to variable="counter"/>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                </sequence>
+                                                                        </sequence>
+                                                                        <else>
+                                                                            <sequence name="Sequence9">
+                                                                                    <assign name="productId">
+                                                                                            <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:product_id
+                                                                                                                <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$Get_address_from_supplierIn.parameters/product/@id</to>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                        <invoke name="SelectSupplier" partnerLink="Registry" operation="get_address_from_supplier" portType="ns11:SupplierRegistry" inputVariable="Get_address_from_supplierIn" outputVariable="Get_address_from_supplierOut"/>
+                                                                                        <assign name="EndPointReference">
+                                                                                            <copy>
+                                                                                                    <from>ns4:doXslTransform('urn:stylesheets:wrap2serviceref.xsl', $Get_address_from_supplierOut.parameters/return)</from>
+                                                                                                        <to partnerLink="Registry"/>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                        <assign name="productIdForSupplier">
+                                                                                            <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:product_id
+                                                                            <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$SupplierOrderIn.parameters/product/@id</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]/ns0:amount
+                                                                            <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEachProductCounter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$SupplierOrderIn.parameters/amount</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>1.5</from>
+                                                                                                        <to>$SupplierOrderIn.parameters/product/singleUnitPrice</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>'SupplierProduct'</from>
+                                                                                                        <to>$SupplierOrderIn.parameters/product/name</to>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                        <invoke name="InvokeSupplierService" partnerLink="SupplierService" operation="order" portType="ns10:Supplier" inputVariable="SupplierOrderIn" outputVariable="SupplierOrderOut"/>
+                                                                                        <assign name="incrementVar">
+                                                                                            <copy>
+                                                                                                    <from>$total_cost + $SupplierOrderOut.parameters/return</from>
+                                                                                                        <to variable="total_cost"/>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>$counter + 1</from>
+                                                                                                        <to variable="counter"/>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                </sequence>
+                                                                        </else>
+                                                                </if>
+                                                                <assign name="Assign2">
+                                                                    <copy>
+                                                                            <from variable="counter"/>
+                                                                                <to variable="ForEachProductCounter"/>
+                                                                        </copy>
+                                                                </assign>
+                                                        </sequence>
+                                                </scope>
+                                        </forEach>
+                                        <flow name="Flow1">
+                                            <sequence name="FlowSequence">
+                                                <sequence name="FlowShipping">
+                                                            <forEach name="ForEachItem" parallel="no" counterName="ForEachItemCounter">
+                                                                    <startCounterValue>1</startCounterValue>
+                                                                        <finalCounterValue>count($Start_processIn.part1/ns0:orderParts)</finalCounterValue>
+                                                                        <scope name="ScopeItem">
+                                                                            <sequence name="SequenceItem">
+                                                                                    <assign name="Assign20">
+                                                                                            <copy>
+                                                                                                    <from>$indexCounter + 1</from>
+                                                                                                        <to variable="indexCounter"/>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                        <assign name="Assign19">
+                                                                                            <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachItemCounter]/ns0:amount
+                                        <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEach2Counter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$Ship_itemsIn.parameters/items/quantity</to>
+                                                                                                </copy>
+                                                                                                <copy>
+                                                                                                    <from>$Start_processIn.part1/ns0:orderParts[$ForEachItemCounter]/ns0:product_id
+                                        <sxed2:editor>
+                                                                                                                    <sxed2:predicate path="$Start_processIn.part1/ns0:orderParts[$ForEach2Counter]" source="from"/>
+                                                                                                                </sxed2:editor>
+                                                                                                        </from>
+                                                                                                        <to>$Ship_itemsIn.parameters/items/product/@id</to>
+                                                                                                </copy>
+                                                                                        </assign>
+                                                                                </sequence>
+                                                                        </scope>
+                                                                </forEach>
+                                                                <assign name="Assign21">
+                                                                    <copy>
+                                                                            <from>$Get_customerOut.parameters/return/addresses/address</from>
+                                                                                <to>$Ship_itemsIn.parameters/customer_shipping_address</to>
+                                                                        </copy>
+                                                                </assign>
+                                                    <invoke name="InvokeShipping" partnerLink="Shiping" operation="ship_items" portType="ns2:ShippingService" inputVariable="Ship_itemsIn" outputVariable="Ship_itemsOut"/>
+                                                </sequence>
+                                            </sequence>
+                                                <sequence name="FlowUpdateAccount">
+                                                    <assign name="balanceToUpdate">
+                                                            <copy>
+                                                                    <from>$Get_customerOut.parameters/return/@id</from>
+                                                                        <to>$Update_accountIn.parameters/id</to>
+                                                                </copy>
+                                                                <copy>
+                                                                    <from>$Get_customerOut.parameters/return/openBalance + $total_cost</from>
+                                                                        <to>$Update_accountIn.parameters/balance</to>
+                                                                </copy>
+                                                        </assign>
+                                                        <invoke name="InvokeUpdate" partnerLink="CustomerMNG" operation="update_account" portType="ns9:CustomerManagement" inputVariable="Update_accountIn" outputVariable="Update_accountOut"/>
+                                                </sequence>
+                                                <sequence name="Sequence1">
+                                                    <assign name="Assign22">
+                                                            <copy>
+                                                                    <from>$Get_customerOut.parameters/return/@id</from>
+                                                                        <to>$Notify_customerInAfterOrder.parameters/id</to>
+                                                                </copy>
+                                                                <copy>
+                                                                    <from>concat('Send ', $Get_customerOut.parameters/return/name)</from>
+                                                                        <to>$Notify_customerInAfterOrder.parameters/message</to>
+                                                                </copy>
+                                                        </assign>
+                                                        <invoke name="InvokeNotiyCustomerAfterOrder" partnerLink="CustomerMNG" operation="notify_customer" portType="ns9:CustomerManagement" inputVariable="Notify_customerInAfterOrder" outputVariable="Notify_customerOutAfterOrder"/>
+                                                </sequence>
+                                        </flow>
+                                        <assign name="Assign1">
+                                            <copy>
+                                                    <from>concat($total_cost, $Notify_customerInAfterOrder.parameters/message, $Ship_itemsOut.parameters/return)</from>
+                                                        <to>$Start_processOut.part1/ns0:orderResult/ns0:comment</to>
+                                                </copy>
+                                                <copy>
+                                                    <from>true()</from>
+                                                        <to variable="success"/>
+                                                </copy>
+                                        </assign>
+                                        <reply name="ReplyReqeustOrder" partnerLink="OrderProcess" operation="start_process" portType="ns6:OrderProcessPortType" variable="Start_processOut"/>
+                                </sequence>
+                            <else>
+                                <sequence name="Sequence14">
+                                    <assign name="Assign23">
+                                        <copy>
+                                            <from>$Start_processIn.part1/ns0:customer</from>
+                                            <to>$Notify_customerIn.parameters/id</to>
+                                        </copy>
+                                        <copy>
+                                            <from>'Unknown The Customer'</from>
+                                            <to>$Notify_customerIn.parameters/message/message</to>
+                                        </copy> 
+                                    </assign>
+                                    <invoke name="InvokeNotifyCustomer" partnerLink="CustomerMNG" operation="notify_customer" portType="ns9:CustomerManagement" inputVariable="Notify_customerIn" outputVariable="Notify_customerOut"/>
+                                </sequence>
+                            </else>
+                        </if>
+            </sequence>
+        </scope>
+    </sequence>
+</process>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
